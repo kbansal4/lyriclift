@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#f4f0e8" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#101312" media="(prefers-color-scheme: dark)" />
+  <meta name="description" content="LyricLift is a text analytics project that turns original lyrics into sentiment-aware production recommendations." />
+  <link rel="icon" href="data:," />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>LyricLift</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --paper: #f4f0e8;
+      --paper-2: #ebe5da;
+      --ink: #171a18;
+      --muted: #5e635e;
+      --line: #cbc6bb;
+      --panel: #fffdf7;
+      --panel-strong: #191d1b;
+      --accent: #e8492f;
+      --accent-soft: #ffd7cb;
+      --signal: #287a68;
+      --signal-soft: #c9e8de;
+      --gold: #a56a00;
+      --nav-bg: rgba(244, 240, 232, .86);
+      --shadow: 0 28px 70px rgba(30, 34, 31, .12);
+      --radius-sm: 10px;
+      --radius-md: 18px;
+      --radius-lg: 30px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --paper: #101312;
+        --paper-2: #171b19;
+        --ink: #f4f0e8;
+        --muted: #aeb5af;
+        --line: #353b37;
+        --panel: #1a1f1c;
+        --panel-strong: #edf1eb;
+        --accent: #ff755a;
+        --accent-soft: #4b261f;
+        --signal: #68d2b7;
+        --signal-soft: #173d34;
+        --gold: #f2b94e;
+        --nav-bg: rgba(16, 19, 18, .86);
+        --shadow: 0 28px 70px rgba(0, 0, 0, .32);
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: "Manrope", sans-serif;
+      font-size: 16px;
+      line-height: 1.65;
+      text-rendering: optimizeLegibility;
+    }
+    a { color: inherit; }
+    button { font: inherit; }
+    ::selection { background: var(--accent); color: #fff; }
+
+    .skip-link {
+      position: fixed;
+      left: 16px;
+      top: -60px;
+      z-index: 30;
+      padding: 10px 14px;
+      background: var(--panel-strong);
+      color: var(--paper);
+      border-radius: 8px;
+      transition: top .2s ease;
+    }
+    .skip-link:focus { top: 16px; }
+
+    .topnav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid transparent;
+      background: var(--nav-bg);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      transition: border-color .2s ease;
+    }
+    .topnav.scrolled { border-color: var(--line); }
+    .nav-inner {
+      width: min(1180px, calc(100% - 40px));
+      height: 60px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 24px;
+    }
+    .nav-mark {
+      display: flex;
+      gap: 9px;
+      align-items: center;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 12px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .nav-mark::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 14px 0 0 var(--signal);
+      margin-right: 14px;
+    }
+    .nav-links { display: flex; align-items: center; gap: 6px; }
+    .nav-links a {
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 11px;
+      border-radius: 8px;
+    }
+    .nav-links a:hover,
+    .nav-links a:focus-visible,
+    .nav-links a.active { color: var(--ink); background: var(--paper-2); outline: none; }
+
+    main { overflow: clip; }
+    .wrap { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+    .hero {
+      min-height: calc(100svh - 60px);
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(390px, .95fr);
+      gap: clamp(44px, 7vw, 96px);
+      align-items: center;
+      padding: 72px 0 86px;
+    }
+    .eyebrow {
+      margin: 0 0 22px;
+      font-family: "IBM Plex Mono", monospace;
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 {
+      margin-bottom: 26px;
+      font-size: clamp(64px, 9vw, 132px);
+      line-height: .82;
+      letter-spacing: -.075em;
+      font-weight: 800;
+    }
+    .hero-lede {
+      max-width: 690px;
+      margin-bottom: 30px;
+      font-size: clamp(20px, 2.2vw, 30px);
+      line-height: 1.28;
+      letter-spacing: -.025em;
+      font-weight: 500;
+    }
+    .hero-detail {
+      max-width: 640px;
+      color: var(--muted);
+      font-size: 17px;
+    }
+    .meta-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 34px 0; }
+    .meta-pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 12px;
+      color: var(--muted);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 12px;
+    }
+    .cta-row { display: flex; flex-wrap: wrap; gap: 12px; }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 48px;
+      padding: 11px 17px;
+      border: 1px solid var(--ink);
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 14px;
+      transition: transform .16s ease, background .16s ease, color .16s ease;
+    }
+    .button:hover { transform: translateY(-2px); }
+    .button.primary { background: var(--ink); color: var(--paper); }
+    .button.secondary { border-color: var(--line); color: var(--ink); }
+    .button svg { width: 17px; height: 17px; }
+
+    .analysis-card {
+      position: relative;
+      color: #edf1eb;
+      background: #171b19;
+      border-radius: 28px;
+      padding: 26px;
+      box-shadow: var(--shadow);
+      transform: rotate(1.6deg);
+    }
+    .analysis-card::before {
+      content: "";
+      position: absolute;
+      inset: -15px 22px 17px -18px;
+      border: 1px solid var(--line);
+      border-radius: 26px;
+      z-index: -1;
+      transform: rotate(-3deg);
+    }
+    .card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 26px;
+    }
+    .card-label {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: #aeb5af;
+    }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 11px;
+      color: #7ce1c3;
+    }
+    .status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #7ce1c3; }
+    .song-title { font-size: 30px; line-height: 1.1; margin-bottom: 5px; letter-spacing: -.03em; }
+    .song-artist { color: #aeb5af; margin-bottom: 24px; }
+    .waveform {
+      height: 88px;
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      padding: 10px 0 18px;
+      border-bottom: 1px solid #363c38;
+    }
+    .waveform i {
+      display: block;
+      width: 4px;
+      height: var(--h);
+      border-radius: 9px;
+      background: #ff755a;
+      opacity: var(--o, .85);
+      animation: pulse 2.4s ease-in-out infinite alternate;
+      animation-delay: var(--d, 0s);
+    }
+    @keyframes pulse { to { height: calc(var(--h) * .58); opacity: .55; } }
+    .sentiment-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin: 20px 0 18px;
+    }
+    .sentiment-row span:first-child { color: #aeb5af; font-size: 13px; }
+    .sentiment-badge { color: #ffb5a6; background: #4b261f; padding: 5px 9px; border-radius: 7px; font-family: "IBM Plex Mono", monospace; font-size: 11px; }
+    .metric { display: grid; grid-template-columns: 104px 1fr 34px; gap: 10px; align-items: center; margin-top: 12px; }
+    .metric-name { color: #c4cac5; font-size: 12px; }
+    .track { height: 7px; border-radius: 99px; background: #303633; overflow: hidden; }
+    .fill { width: var(--value); height: 100%; border-radius: inherit; background: var(--color); }
+    .metric-value { font-family: "IBM Plex Mono", monospace; text-align: right; font-size: 12px; color: #edf1eb; }
+    .card-note { color: #8f9891; font-family: "IBM Plex Mono", monospace; font-size: 10px; margin: 21px 0 0; }
+
+    .section { padding: clamp(78px, 10vw, 132px) 0; border-top: 1px solid var(--line); }
+    .section-head { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: end; margin-bottom: 58px; }
+    .section-number { font-family: "IBM Plex Mono", monospace; color: var(--accent); font-size: 12px; margin-bottom: 16px; }
+    h2 { margin-bottom: 0; max-width: 760px; font-size: clamp(38px, 5vw, 68px); line-height: 1.02; letter-spacing: -.05em; }
+    .section-intro { color: var(--muted); max-width: 590px; margin: 0; font-size: 18px; }
+
+    .problem-grid { display: grid; grid-template-columns: 1.2fr .8fr; gap: 26px; }
+    .problem-statement {
+      min-height: 350px;
+      border-radius: var(--radius-lg);
+      background: var(--accent);
+      color: #fff8f5;
+      padding: clamp(30px, 5vw, 58px);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .problem-statement blockquote { margin: 0; max-width: 750px; font-size: clamp(28px, 3.4vw, 48px); line-height: 1.17; letter-spacing: -.035em; font-weight: 700; }
+    .problem-statement small { margin-top: 34px; font-family: "IBM Plex Mono", monospace; font-size: 11px; color: #ffe1da; }
+    .facts { display: grid; grid-template-rows: repeat(3, 1fr); gap: 14px; }
+    .fact { border: 1px solid var(--line); border-radius: var(--radius-md); padding: 24px; background: var(--panel); }
+    .fact strong { display: block; margin-bottom: 5px; font-size: 28px; letter-spacing: -.03em; }
+    .fact span { color: var(--muted); font-size: 14px; }
+
+    .pipeline { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .step { padding: 28px 24px 34px; border-right: 1px solid var(--line); }
+    .step:last-child { border-right: 0; }
+    .step-num { color: var(--accent); font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+    .step h3 { margin: 52px 0 12px; font-size: 22px; line-height: 1.2; letter-spacing: -.025em; }
+    .step p { margin: 0; color: var(--muted); font-size: 14px; }
+    .stack { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 30px; }
+    .stack span { padding: 7px 10px; background: var(--paper-2); border-radius: 7px; color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 11px; }
+
+    .decision-layout { display: grid; grid-template-columns: .73fr 1.27fr; gap: 48px; align-items: start; }
+    .decision-copy { position: sticky; top: 96px; }
+    .decision-copy h2 { font-size: clamp(38px, 4vw, 58px); }
+    .decision-copy p { color: var(--muted); margin: 24px 0 0; }
+    .model-tabs { border-top: 1px solid var(--line); }
+    .model-tab {
+      width: 100%;
+      color: var(--ink);
+      background: transparent;
+      border: 0;
+      border-bottom: 1px solid var(--line);
+      padding: 22px 0;
+      text-align: left;
+      cursor: pointer;
+    }
+    .model-title-row { display: grid; grid-template-columns: 34px 1fr auto; gap: 12px; align-items: center; }
+    .model-index { font-family: "IBM Plex Mono", monospace; font-size: 11px; color: var(--accent); }
+    .model-name { font-size: 24px; font-weight: 700; letter-spacing: -.025em; }
+    .model-verdict { color: var(--muted); font-size: 12px; font-family: "IBM Plex Mono", monospace; }
+    .model-detail { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .3s ease; }
+    .model-detail > div { overflow: hidden; }
+    .model-detail p { color: var(--muted); margin: 18px 0 4px 46px; max-width: 650px; font-size: 15px; }
+    .model-tab[aria-expanded="true"] .model-detail { grid-template-rows: 1fr; }
+    .model-tab[aria-expanded="true"] .model-name { color: var(--accent); }
+    .pick-note { margin-top: 28px; padding: 20px 22px; border-radius: 12px; background: var(--signal-soft); color: var(--ink); font-size: 14px; }
+    .pick-note strong { color: var(--signal); }
+
+    .case-shell { background: var(--panel-strong); color: var(--paper); border-radius: var(--radius-lg); overflow: hidden; }
+    .case-top { padding: clamp(30px, 5vw, 58px); display: flex; align-items: end; justify-content: space-between; gap: 24px; border-bottom: 1px solid color-mix(in srgb, var(--paper) 18%, transparent); }
+    .case-top .eyebrow { color: var(--signal); }
+    .case-top h2 { max-width: 660px; font-size: clamp(38px, 5vw, 66px); }
+    .case-caption { max-width: 360px; color: color-mix(in srgb, var(--paper) 68%, transparent); margin: 0; font-size: 14px; }
+    .case-grid { display: grid; grid-template-columns: .86fr 1.14fr; }
+    .similar-list { padding: clamp(28px, 4vw, 46px); border-right: 1px solid color-mix(in srgb, var(--paper) 18%, transparent); }
+    .panel-kicker { font-family: "IBM Plex Mono", monospace; text-transform: uppercase; letter-spacing: .08em; font-size: 11px; color: color-mix(in srgb, var(--paper) 55%, transparent); }
+    .songs { list-style: none; padding: 0; margin: 24px 0 0; counter-reset: songs; }
+    .songs li { counter-increment: songs; display: grid; grid-template-columns: 28px 1fr; gap: 12px; padding: 13px 0; border-bottom: 1px solid color-mix(in srgb, var(--paper) 14%, transparent); }
+    .songs li::before { content: counter(songs, decimal-leading-zero); color: var(--accent); font-family: "IBM Plex Mono", monospace; font-size: 11px; padding-top: 4px; }
+    .songs strong { display: block; font-size: 14px; }
+    .songs span { display: block; color: color-mix(in srgb, var(--paper) 58%, transparent); font-size: 12px; }
+    .recommendations { padding: clamp(28px, 4vw, 46px); }
+    .rec-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 24px; }
+    .rec { min-height: 164px; background: color-mix(in srgb, var(--paper) 8%, transparent); padding: 20px; border-radius: 14px; }
+    .rec-head { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 20px; }
+    .rec-head span { font-size: 13px; color: color-mix(in srgb, var(--paper) 70%, transparent); }
+    .rec-head strong { color: var(--accent); font-family: "IBM Plex Mono", monospace; font-size: 20px; }
+    .rec p { color: color-mix(in srgb, var(--paper) 73%, transparent); margin: 0; font-size: 12px; line-height: 1.55; }
+    .case-footnote { margin: 24px 0 0; font-size: 10px; color: color-mix(in srgb, var(--paper) 50%, transparent); font-family: "IBM Plex Mono", monospace; }
+
+    .contribution-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .contribution { border-top: 3px solid var(--ink); padding: 24px 0 30px; }
+    .contribution:nth-child(2) { border-color: var(--accent); }
+    .contribution:nth-child(3) { border-color: var(--signal); }
+    .contribution:nth-child(4) { border-color: var(--gold); }
+    .contribution h3 { font-size: 23px; margin-bottom: 11px; letter-spacing: -.025em; }
+    .contribution p { color: var(--muted); margin: 0; max-width: 520px; font-size: 15px; }
+
+    .reflection { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; }
+    .reflection h2 { position: sticky; top: 96px; align-self: start; }
+    .lessons { border-top: 1px solid var(--line); }
+    .lesson { display: grid; grid-template-columns: 30px 1fr; gap: 18px; padding: 24px 0; border-bottom: 1px solid var(--line); }
+    .lesson-num { font-family: "IBM Plex Mono", monospace; color: var(--accent); font-size: 12px; padding-top: 4px; }
+    .lesson h3 { font-size: 19px; margin-bottom: 8px; }
+    .lesson p { color: var(--muted); font-size: 14px; margin: 0; }
+
+    .next {
+      margin-top: 74px;
+      padding: clamp(30px, 5vw, 58px);
+      background: var(--signal-soft);
+      border-radius: var(--radius-lg);
+      display: grid;
+      grid-template-columns: .8fr 1.2fr;
+      gap: 40px;
+    }
+    .next h3 { font-size: 30px; letter-spacing: -.035em; margin: 0; }
+    .next ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 16px; }
+    .next li { display: grid; grid-template-columns: 14px 1fr; gap: 12px; color: var(--muted); font-size: 15px; }
+    .next li::before { content: "+"; color: var(--signal); font-family: "IBM Plex Mono", monospace; font-weight: 500; }
+
+    footer { padding: 44px 0 60px; border-top: 1px solid var(--line); }
+    .footer-inner { display: flex; justify-content: space-between; align-items: end; gap: 24px; }
+    .footer-title { font-weight: 800; font-size: 26px; letter-spacing: -.04em; margin-bottom: 6px; }
+    .footer-copy { color: var(--muted); font-size: 13px; margin: 0; }
+    .footer-links { display: flex; flex-wrap: wrap; gap: 10px; }
+    .footer-links a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--line); padding: 6px 0; font-family: "IBM Plex Mono", monospace; font-size: 11px; }
+    .footer-links a:hover { color: var(--ink); border-color: var(--ink); }
+
+    @media (max-width: 920px) {
+      .hero { grid-template-columns: 1fr; min-height: auto; padding-top: 54px; }
+      .analysis-card { width: min(560px, 96%); margin: 16px auto 0; transform: rotate(.8deg); }
+      .section-head, .decision-layout, .reflection { grid-template-columns: 1fr; }
+      .decision-copy, .reflection h2 { position: static; }
+      .problem-grid { grid-template-columns: 1fr; }
+      .facts { grid-template-columns: repeat(3, 1fr); grid-template-rows: none; }
+      .pipeline { grid-template-columns: repeat(2, 1fr); }
+      .step:nth-child(2) { border-right: 0; }
+      .step:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+      .case-grid { grid-template-columns: 1fr; }
+      .similar-list { border-right: 0; border-bottom: 1px solid color-mix(in srgb, var(--paper) 18%, transparent); }
+    }
+
+    @media (max-width: 680px) {
+      .wrap, .nav-inner { width: min(100% - 28px, 1180px); }
+      .nav-links a:not(:last-child) { display: none; }
+      .nav-links a:last-child { background: var(--paper-2); }
+      .hero { padding: 45px 0 70px; gap: 48px; }
+      h1 { font-size: clamp(60px, 22vw, 92px); }
+      .hero-lede { font-size: 20px; }
+      .hero-detail { font-size: 15px; }
+      .cta-row { display: grid; }
+      .button { width: 100%; }
+      .analysis-card { width: calc(100% - 8px); padding: 20px; }
+      .analysis-card::before { inset: -10px 12px 12px -10px; }
+      .metric { grid-template-columns: 90px 1fr 30px; }
+      .section { padding: 76px 0; }
+      .section-head { gap: 22px; margin-bottom: 38px; }
+      .section-intro { font-size: 16px; }
+      .problem-statement { min-height: 310px; }
+      .facts { grid-template-columns: 1fr; }
+      .pipeline { grid-template-columns: 1fr; }
+      .step, .step:nth-child(2) { border-right: 0; border-bottom: 1px solid var(--line); }
+      .step:last-child { border-bottom: 0; }
+      .step h3 { margin-top: 34px; }
+      .model-title-row { grid-template-columns: 26px 1fr; }
+      .model-verdict { grid-column: 2; }
+      .model-detail p { margin-left: 38px; }
+      .case-top { align-items: start; flex-direction: column; }
+      .rec-grid, .contribution-grid, .next { grid-template-columns: 1fr; }
+      .rec { min-height: 0; }
+      .reflection { gap: 34px; }
+      .footer-inner { flex-direction: column; align-items: start; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <nav class="topnav" aria-label="Project sections">
+    <div class="nav-inner">
+      <span class="nav-mark">Fall 2024 project</span>
+      <div class="nav-links">
+        <a href="#approach">Approach</a>
+        <a href="#case-study">Case study</a>
+        <a href="#reflection">Reflection</a>
+        <a href="#sources">Files</a>
+      </div>
+    </div>
+  </nav>
+
+  <main id="main">
+    <div class="wrap">
+      <section class="hero" aria-labelledby="hero-title">
+        <div>
+          <p class="eyebrow">Text analytics for music production</p>
+          <h1 id="hero-title">Lyric<br>Lift</h1>
+          <p class="hero-lede">A songwriting assistant that reads the emotional direction of lyrics, finds relevant songs, and turns those comparisons into practical production guidance.</p>
+          <p class="hero-detail">Built as a graduate text analytics project, LyricLift combines VADER sentiment analysis with Word2Vec similarity. Its output gives songwriters four concrete starting points: danceability, loudness, acousticness, and energy.</p>
+          <div class="meta-row" aria-label="Project details">
+            <span class="meta-pill">Team project</span>
+            <span class="meta-pill">Python</span>
+            <span class="meta-pill">10,000+ songs</span>
+            <span class="meta-pill">2000–2019</span>
+          </div>
+          <div class="cta-row">
+            <a class="button primary" href="#case-study">See the case study
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+            <a class="button secondary" href="Textw2v.py" download>Download the Python model
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 20h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </a>
+          </div>
+        </div>
+
+        <aside class="analysis-card" aria-label="Historical LyricLift output for Blinding Lights">
+          <div class="card-top">
+            <span class="card-label">Example analysis</span>
+            <span class="status">complete</span>
+          </div>
+          <h2 class="song-title">Blinding Lights</h2>
+          <p class="song-artist">The Weeknd</p>
+          <div class="waveform" aria-hidden="true">
+            <i style="--h:22px;--d:-.3s"></i><i style="--h:36px;--d:-.8s"></i><i style="--h:50px;--d:-1.1s"></i><i style="--h:30px;--d:-.4s"></i><i style="--h:58px;--d:-1.4s"></i><i style="--h:42px;--d:-.6s"></i><i style="--h:24px;--d:-1.6s"></i><i style="--h:64px;--d:-.2s"></i><i style="--h:39px;--d:-1s"></i><i style="--h:54px;--d:-1.8s"></i><i style="--h:27px;--d:-.7s"></i><i style="--h:46px;--d:-1.3s"></i><i style="--h:60px;--d:-.1s"></i><i style="--h:31px;--d:-1.7s"></i><i style="--h:50px;--d:-.9s"></i><i style="--h:20px;--d:-.5s"></i><i style="--h:44px;--d:-1.2s"></i><i style="--h:58px;--d:-1.5s"></i><i style="--h:35px;--d:-.25s"></i><i style="--h:48px;--d:-.75s"></i><i style="--h:26px;--d:-1.05s"></i><i style="--h:55px;--d:-1.45s"></i><i style="--h:38px;--d:-.55s"></i><i style="--h:61px;--d:-1.9s"></i>
+          </div>
+          <div class="sentiment-row"><span>VADER sentiment match</span><span class="sentiment-badge">same sentiment</span></div>
+          <div class="metric"><span class="metric-name">Danceability</span><span class="track"><span class="fill" style="--value:64%;--color:#ff755a"></span></span><span class="metric-value">6.4</span></div>
+          <div class="metric"><span class="metric-name">Loudness</span><span class="track"><span class="fill" style="--value:78%;--color:#f2b94e"></span></span><span class="metric-value">7.8</span></div>
+          <div class="metric"><span class="metric-name">Acousticness</span><span class="track"><span class="fill" style="--value:20%;--color:#7ce1c3"></span></span><span class="metric-value">2.0</span></div>
+          <div class="metric"><span class="metric-name">Energy</span><span class="track"><span class="fill" style="--value:65%;--color:#84a7ff"></span></span><span class="metric-value">6.5</span></div>
+          <p class="card-note">Presentation output, shown on a 0–10 display scale.</p>
+        </aside>
+      </section>
+    </div>
+
+    <section class="section" id="overview">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="section-number">01 / The problem</div>
+            <h2>Lyrics arrive before the production plan.</h2>
+          </div>
+          <p class="section-intro">A songwriter can know what they want to say and still be unsure how the track should feel. LyricLift uses patterns from successful songs to give that early creative decision some structure.</p>
+        </div>
+        <div class="problem-grid">
+          <div class="problem-statement">
+            <blockquote>How might the emotional language in a draft point toward the right sonic character?</blockquote>
+            <small>Original project question, reframed from the Fall 2024 proposal</small>
+          </div>
+          <div class="facts" aria-label="Project scope">
+            <div class="fact"><strong>10,000+</strong><span>popular songs used in the project dataset</span></div>
+            <div class="fact"><strong>20 years</strong><span>release window, filtered to 2000 through 2019</span></div>
+            <div class="fact"><strong>&lt; 2.5 sec</strong><span>recommendation time reported in the final presentation</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="approach">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="section-number">02 / Method</div>
+            <h2>From a page of lyrics to a production brief.</h2>
+          </div>
+          <p class="section-intro">The final Python implementation uses a compact four-step pipeline. Each step stays interpretable, so the recommendation can be explained rather than simply produced.</p>
+        </div>
+        <div class="pipeline">
+          <article class="step">
+            <span class="step-num">01</span>
+            <h3>Clean the catalog</h3>
+            <p>Keep songs released from 2000 to 2019, reset the index, and remove rows with missing or empty lyrics.</p>
+          </article>
+          <article class="step">
+            <span class="step-num">02</span>
+            <h3>Read the mood</h3>
+            <p>Use VADER compound scores to classify lyrics into five bands, from very negative to very positive.</p>
+          </article>
+          <article class="step">
+            <span class="step-num">03</span>
+            <h3>Measure similarity</h3>
+            <p>Tokenize lyrics, train 100-dimensional Word2Vec embeddings, then rank songs using cosine similarity.</p>
+          </article>
+          <article class="step">
+            <span class="step-num">04</span>
+            <h3>Translate the result</h3>
+            <p>Take the five closest songs with matching sentiment, average four production attributes, and explain each score in plain language.</p>
+          </article>
+        </div>
+        <div class="stack" aria-label="Technical stack">
+          <span>pandas</span><span>NLTK</span><span>VADER</span><span>gensim</span><span>Word2Vec</span><span>scikit-learn</span><span>cosine similarity</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="model-choice">
+      <div class="wrap decision-layout">
+        <div class="decision-copy">
+          <div class="section-number">03 / Model choice</div>
+          <h2>Accuracy mattered. So did speed.</h2>
+          <p>The team tested three approaches. The goal was not to choose the most complicated model. It was to find the best balance of semantic understanding, believable recommendations, and fast execution.</p>
+          <div class="pick-note"><strong>Final choice:</strong> Word2Vec paired a deeper reading of word relationships with the speed needed for an interactive recommendation tool.</div>
+        </div>
+        <div class="model-tabs" aria-label="Model comparison">
+          <button class="model-tab" type="button" aria-expanded="true">
+            <span class="model-title-row"><span class="model-index">01</span><span class="model-name">Word2Vec</span><span class="model-verdict">Selected</span></span>
+            <span class="model-detail"><span><p>Captured relationships between words while staying quick enough for the project’s response-time goal. The team’s song-by-song checks also produced reasonable similarity results.</p></span></span>
+          </button>
+          <button class="model-tab" type="button" aria-expanded="false">
+            <span class="model-title-row"><span class="model-index">02</span><span class="model-name">BERT</span><span class="model-verdict">Strong, slower</span></span>
+            <span class="model-detail"><span><p>Showed stronger contextual understanding, but required more computation and ran more slowly. That tradeoff made it less suitable for the project’s lightweight experience.</p></span></span>
+          </button>
+          <button class="model-tab" type="button" aria-expanded="false">
+            <span class="model-title-row"><span class="model-index">03</span><span class="model-name">TF-IDF</span><span class="model-verdict">Baseline</span></span>
+            <span class="model-detail"><span><p>Created a useful baseline, but could not represent how words relate to one another. That limitation matters when meaning in lyrics depends on context rather than raw term frequency.</p></span></span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="case-study">
+      <div class="wrap">
+        <div class="case-shell">
+          <div class="case-top">
+            <div>
+              <p class="eyebrow">Historical walkthrough</p>
+              <h2>What LyricLift returned for “Blinding Lights.”</h2>
+            </div>
+            <p class="case-caption">The team used The Weeknd’s 2019 song as a presentation case study. The model compared its lyrics with the filtered catalog, then produced this ranked set and production brief.</p>
+          </div>
+          <div class="case-grid">
+            <div class="similar-list">
+              <span class="panel-kicker">Top five similar songs</span>
+              <ol class="songs">
+                <li><div><strong>Laughed Until We Cried</strong><span>Jason Aldean</span></div></li>
+                <li><div><strong>She Don’t (Feat. Ty Dolla $ign)</strong><span>Ella Mai</span></div></li>
+                <li><div><strong>Give Me A Try</strong><span>The Wombats</span></div></li>
+                <li><div><strong>Thru Your Phone</strong><span>Cardi B</span></div></li>
+                <li><div><strong>Thinkin Bout Cops</strong><span>Slightly Stoopid</span></div></li>
+              </ol>
+            </div>
+            <div class="recommendations">
+              <span class="panel-kicker">Production recommendations</span>
+              <div class="rec-grid">
+                <article class="rec">
+                  <div class="rec-head"><span>Danceability</span><strong>6.4</strong></div>
+                  <p>Use clear rhythms, moderate tempos, and a catchy repeated hook. Pop, indie, or soft electronic production fits this range.</p>
+                </article>
+                <article class="rec">
+                  <div class="rec-head"><span>Loudness</span><strong>7.8</strong></div>
+                  <p>Aim for impact with strong dynamics and a bold instrumental presence.</p>
+                </article>
+                <article class="rec">
+                  <div class="rec-head"><span>Acousticness</span><strong>2.0</strong></div>
+                  <p>Favor electronic elements over acoustic ones, while leaving room for a few organic textures.</p>
+                </article>
+                <article class="rec">
+                  <div class="rec-head"><span>Energy</span><strong>6.5</strong></div>
+                  <p>Build around a lively tempo, energetic beats, and a dynamic arrangement.</p>
+                </article>
+              </div>
+              <p class="case-footnote">Scores are reproduced from the final project presentation and shown on its 0–10 display scale.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="contributions">
+      <div class="wrap">
+        <div class="section-head">
+          <div>
+            <div class="section-number">04 / My contribution</div>
+            <h2>The work behind the recommendation.</h2>
+          </div>
+          <p class="section-intro">My part of the project focused on getting the data, sentiment logic, and model comparison into a dependable shape. That meant writing code, testing edge cases, and making the output useful to a songwriter.</p>
+        </div>
+        <div class="contribution-grid">
+          <article class="contribution"><h3>Prepared the data</h3><p>Filtered the catalog to a contemporary release window, removed missing records, and kept the inputs needed for lyrics, metadata, and production attributes.</p></article>
+          <article class="contribution"><h3>Built the text pipeline</h3><p>Tokenized lyrics with NLTK, implemented VADER sentiment analysis, and set the five classification bands used by the final model.</p></article>
+          <article class="contribution"><h3>Tuned the thresholds</h3><p>Tested lyrics across a range of known moods, then adjusted the compound-score cutoffs to reduce obvious sentiment misclassifications.</p></article>
+          <article class="contribution"><h3>Benchmarked the models</h3><p>Compared Word2Vec, BERT, and TF-IDF results by checking whether the recommended songs felt reasonable and whether the model could respond quickly.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="reflection">
+      <div class="wrap">
+        <div class="reflection">
+          <h2>Project takeaways.</h2>
+          <div class="lessons">
+            <article class="lesson"><span class="lesson-num">01</span><div><h3>Model choice is a product decision</h3><p>BERT was powerful, but Word2Vec better matched the actual experience we wanted to deliver. The “best” model depends on the constraint that matters.</p></div></article>
+            <article class="lesson"><span class="lesson-num">02</span><div><h3>Interpretability changes the value of a score</h3><p>A danceability value by itself is hard to use. Turning that number into guidance about rhythm, tempo, and instrumentation makes the output actionable.</p></div></article>
+            <article class="lesson"><span class="lesson-num">03</span><div><h3>Lyrics are full of context traps</h3><p>Sarcasm, metaphor, conflicting emotions, and genre-specific language can all push a sentiment model toward the wrong reading.</p></div></article>
+            <article class="lesson"><span class="lesson-num">04</span><div><h3>Averages can hide useful differences</h3><p>Two songs can share a sentiment and still sound completely different. A future version should segment by genre before averaging production attributes.</p></div></article>
+          </div>
+        </div>
+        <div class="next">
+          <h3>Potential next steps</h3>
+          <ul>
+            <li>Make recommendations genre-aware, especially for slang and different ways of expressing emotion.</li>
+            <li>Train embeddings on a dedicated music and lyrics corpus instead of learning only from the project dataset.</li>
+            <li>Use a larger catalog and validate results with structured feedback from songwriters and producers.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer id="sources">
+    <div class="wrap footer-inner">
+      <div>
+        <div class="footer-title">LyricLift</div>
+        <p class="footer-copy">Graduate text analytics project by Kush Bansal and team, Fall 2024.</p>
+      </div>
+      <div class="footer-links">
+        <a href="Textw2v.py" download>Python model ↓</a>
+        <a href="LyricLift-Deck.pptx" download>Project deck ↓</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var nav = document.querySelector('.topnav');
+      var links = Array.prototype.slice.call(document.querySelectorAll('.nav-links a'));
+      var sections = links.map(function (link) { return document.querySelector(link.getAttribute('href')); }).filter(Boolean);
+
+      function updateNav() {
+        nav.classList.toggle('scrolled', window.scrollY > 12);
+        var marker = window.scrollY + 150;
+        var current = '';
+        sections.forEach(function (section) {
+          if (section.offsetTop <= marker) current = '#' + section.id;
+        });
+        links.forEach(function (link) {
+          link.classList.toggle('active', link.getAttribute('href') === current);
+        });
+      }
+
+      document.querySelectorAll('.model-tab').forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          var isOpen = tab.getAttribute('aria-expanded') === 'true';
+          document.querySelectorAll('.model-tab').forEach(function (item) { item.setAttribute('aria-expanded', 'false'); });
+          tab.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+        });
+      });
+
+      window.addEventListener('scroll', updateNav, { passive: true });
+      window.addEventListener('resize', updateNav);
+      updateNav();
+    })();
+  </script>
+</body>
+</html>
